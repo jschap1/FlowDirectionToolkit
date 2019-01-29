@@ -21,11 +21,20 @@
 % REQUIREMENTS
 % Requires mapping toolbox.
 % Performance is very slow and RAM-intensive for large domains
+% It is impractical to use this script for domains larger than about 200 by
+% 200 pixels
 % 
 % AUTHORS
 % Written by Dongyue Li
 % Modified by Jacob Schaperow, Aug. 11, 2017
 % Updated 1/29/2019 JRS
+%
+% Sample inputs
+% fdirfile = './Data/Geog/fdir_in.asc';
+% bbfile = './Data/Geog/upper_tuolumne_wgs.shp';
+% rivfile = './Data/Geog/UT_rivs.shp';
+% gagefile = './Data/Geog/gauge_xy.txt';
+% projflag = 0; % use 0 for geographic coordinates
 
 clear, clc
 cd /Users/jschap/Documents/Codes/FlowDirectionToolkit/
@@ -33,11 +42,12 @@ addpath('./Scripts')
 
 %% INPUTS
 
-fdirfile = './Data/Geog/fdir_in.asc';
-bbfile = './Data/Geog/upper_tuolumne_wgs.shp';
-rivfile = './Data/Geog/UT_rivs.shp';
-gagefile = './Data/Geog/gauge_xy.txt';
-projflag = 0; % use 0 for geographic coordinates
+fdirfile = '/Volumes/HD3/SWOTDA/Data/IRB/flowdir.tif';
+bbfile = '/Volumes/HD3/SWOTDA/Data/IRB/irb_bb_merc.shp';
+rivfile = '/Volumes/HD3/SWOTDA/Data/IRB/bathy_merc.shp';
+gagefile = '/Volumes/HD3/SWOTDA/Data/IRB/vgagecoords.txt';
+projflag = 1;
+gages = 0; % not displaying gauge locations
 
 %%
 
@@ -65,10 +75,16 @@ else
     disp('correct_flowdir is not set up for this case.')
 end
 
-gage = load(gagefile);
-[row_ind, col_ind] = GetIndices(fdir, R, gage, res);
+if gages
+    gage = load(gagefile);
+    [row_ind, col_ind] = GetIndices(fdir, R, gage, res);
+    disp('Note that GetIndices only works for latlon coordinates, currently.')
+else
+    row_ind = [];
+    col_ind = [];
+end
 ind = [row_ind, col_ind]; % raster indices where gages are located
-
+    
 % Get lat/lon of basin mask (only the pixels whose values are 1)
 mask = ones(size(fdir));
 [nrow, ncol] = size(mask);
@@ -80,14 +96,20 @@ if ~projflag
     lon = minlon:res:maxlon;
     [Domain.X,Domain.Y] = meshgrid(lon,lat);
 else
-    x = NaN(ncol,1);
-    y = NaN(nrow,1);
-    for row=1:nrow
-        for col=1:ncol
-            [x(col), y(row)] = pix2map(R,row,col);
-        end
-    end
-    [Domain.X,Domain.Y] = meshgrid(x,y);
+    aa = repmat(1:ncol, nrow, 1);
+    row = aa(:)';
+    col = repmat(1:nrow, 1, ncol);
+    [x,y] = pix2map(R, row, col);
+    [Domain.X,Domain.Y] = meshgrid(x,y); 
+    % this produces two square nrow*ncol matrices. Much too big in many cases.
+%     x = NaN(ncol,1);
+%     y = NaN(nrow,1);
+%     for row=1:nrow
+%         for col=1:ncol
+%             [x(col), y(row)] = pix2map(R,row,col);
+%         end
+%     end
+%     [Domain.X,Domain.Y] = meshgrid(x,y);
 end
 
 % if maxlat < 0 && minlat <0 
