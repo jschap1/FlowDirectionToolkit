@@ -10,6 +10,7 @@
 % Highlights cells that flow in the 'wrong' direction compared to 'truth' data
 % Plans for future upgrades:
 % Add ability to check for nontrivial loops
+% Develop workflow for checking partial domains.
 %
 % INPUTS
 % Flow direction file
@@ -42,12 +43,13 @@ addpath('./Scripts')
 
 %% INPUTS
 
-fdirfile = '/Volumes/HD3/SWOTDA/Data/IRB/flowdir.tif';
-bbfile = '/Volumes/HD3/SWOTDA/Data/IRB/irb_bb_merc.shp';
-rivfile = '/Volumes/HD3/SWOTDA/Data/IRB/bathy_merc.shp';
-gagefile = '/Volumes/HD3/SWOTDA/Data/IRB/vgagecoords.txt';
-projflag = 1;
-gages = 0; % not displaying gauge locations
+% If you wish to subset each file, do so in gdal/ogr ahead of time
+
+fdirfile = '/Volumes/HD3/SWOTDA/Data/UMRB/ROUT/umrb.flowdir';
+bbfile = '/Volumes/HD3/SWOTDA/Data/UMRB/Basin/basin.wgs.shp';
+rivfile = '/Volumes/HD3/SWOTDA/Data/UMRB/River/river_wgs.shp';
+gagefile = [];
+projflag = 0;
 
 %%
 
@@ -65,8 +67,12 @@ elseif strcmp(extension, 'tif')
     else % geographic
         error('latlon func not available yet')
     end
+else
+    disp('Irregular extension. Assuming ASCII GRID file.')
+    [fdir, R] = arcgridread(fdirfile);
+    xres = R(1,1) - R(1,2);
+    yres = R(2,1) - R(1,1);
 end
-
 if (abs((xres-yres)/xres))<=0.05 % arbitrary, but useful, threshold
     disp('x and y resolution are approximately equal')
     res = xres;
@@ -75,11 +81,15 @@ else
     disp('correct_flowdir is not set up for this case.')
 end
 
-if gages
+% Convert to VIC routing model flow direction convention, if necessary
+% fdir = convertflowdir(fdir, 'grass');
+
+if ~isempty(gagefile)
     gage = load(gagefile);
     [row_ind, col_ind] = GetIndices(fdir, R, gage, res);
     disp('Note that GetIndices only works for latlon coordinates, currently.')
 else
+    gage = [];
     row_ind = [];
     col_ind = [];
 end
@@ -96,20 +106,20 @@ if ~projflag
     lon = minlon:res:maxlon;
     [Domain.X,Domain.Y] = meshgrid(lon,lat);
 else
-    aa = repmat(1:ncol, nrow, 1);
-    row = aa(:)';
-    col = repmat(1:nrow, 1, ncol);
-    [x,y] = pix2map(R, row, col);
-    [Domain.X,Domain.Y] = meshgrid(x,y); 
+%     aa = repmat(1:ncol, nrow, 1); % THIS EFFICIENCY MOD IS NOT WORKING
+%     row = aa(:)';
+%     col = repmat(1:nrow, 1, ncol);
+%     [x,y] = pix2map(R, row, col);
+%     [Domain.X,Domain.Y] = meshgrid(x,y); 
     % this produces two square nrow*ncol matrices. Much too big in many cases.
-%     x = NaN(ncol,1);
-%     y = NaN(nrow,1);
-%     for row=1:nrow
-%         for col=1:ncol
-%             [x(col), y(row)] = pix2map(R,row,col);
-%         end
-%     end
-%     [Domain.X,Domain.Y] = meshgrid(x,y);
+    x = NaN(ncol,1);
+    y = NaN(nrow,1);
+    for row=1:nrow
+        for col=1:ncol
+            [x(col), y(row)] = pix2map(R,row,col);
+        end
+    end
+    [Domain.X,Domain.Y] = meshgrid(x,y);
 end
 
 % if maxlat < 0 && minlat <0 
@@ -122,12 +132,13 @@ end
 % end
 % Figure this out:
 
-bb = shaperead(bbfile);
 rivs = shaperead(rivfile);
+bb = shaperead(bbfile);
 
 %% Initial plot
 
 h = plotflowdir(fdir, res, Domain.X, Domain.Y, ind, gage, bb, rivs);
+axis([-97.34, -85.90, 36.96, 47.78])
 
 [looprow, loopcol] = CheckForTrivialLoops(fdir);
 [edgerow, edgecol] = CheckIfFlowOffEdge(fdir);
@@ -136,6 +147,7 @@ h = plotflowdir(fdir, res, Domain.X, Domain.Y, ind, gage, bb, rivs);
 % classify rivers as flowing diagonally. Best to just flag cells for manual change.
 fd_riv = GetRiverDir(fdir, R, rivs, res); 
 [wrongdirrow, wrongdircol] = CheckIfWrongDir(fdir, fd_riv);
+% ABOVE LINES ARE NOT WORKING WITH THE PROJECTED DATA
 
 % Option to correct these cells automatically (use at own risk...)
 % [fd_corrected, wrongdirrow, wrongdircol] = CorrectIfWrongDir(fdir, fd_riv);
