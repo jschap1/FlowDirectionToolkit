@@ -50,7 +50,7 @@ addpath('/Users/jschap/Documents/MATLAB/from_file_exchange/arcgridwrite')
 
 % If you wish to subset each file, do so in gdal/ogr ahead of time
 
-fdirfile = './Data/IRB/Experimental/mod_fdir.asc';
+fdirfile = './Data/IRB/Experimental/irb.flowdir.asc';
 bbfile = './Data/IRB/Experimental/irb_basin.shp';
 rivfile = './Data/IRB/Experimental/rivers_merit.shp';
 gagefile = './Data/IRB/Experimental/vgagecoords.txt';
@@ -147,7 +147,7 @@ bb = bb(1); % in case there are multiple shapefiles here...
 
 %% Initial plot
 
-h = plotflowdir(fdir, res, Domain.X, Domain.Y, ind, gage, bb, rivs, 0);
+h = plotflowdir(fdir, res, Domain.X, Domain.Y, ind, gage, bb, rivs, 1);
 hold on
 
 % Add additional set of river vectors
@@ -254,8 +254,7 @@ end
 
 %% Check that the changes are good
 
-h = plotflowdir(fd_corrected, res, Domain.X, Domain.Y, ind, gage, bb, rivs, 0);
-hold on
+h = plotflowdir(fd_corrected, res, Domain.X, Domain.Y, ind, gage, bb, rivs, plotgrid);
 
 [looprow, loopcol] = CheckForTrivialLoops(fd_corrected);
 [edgerow, edgecol] = CheckIfFlowOffEdge(fd_corrected);
@@ -290,23 +289,7 @@ end
 if strcmp(extension, 'asc')
     fd_corrected(isnan(fd_corrected)) = 0;
     fd_corrected = single(fd_corrected);
-    arcgridwrite('./Data/IRB/Experimental/mod_fdir.asc', x, y, uint8(fd_corrected));
+    arcgridwrite('./Data/IRB/Experimental/mod_fdir.asc', x, y, fd_corrected);
 elseif strcmp(extension, 'tif')
     geotiffwrite('mod_fdir.tif', fd_corrected, R);
 end
-
-% convert flow direction convention to GRASS convention
-fd_copy = fd_corrected;
-fd_copy(fd_corrected == 1) = 2;
-fd_copy(fd_corrected == 2) = 1;
-fd_copy(fd_corrected == 3) = 8;
-fd_copy(fd_corrected == 4) = 7;
-fd_copy(fd_corrected == 5) = 6;
-fd_copy(fd_corrected == 6) = 5;
-fd_copy(fd_corrected == 7) = 4;
-fd_copy(fd_corrected == 8) = 3;
-arcgridwrite('./Data/IRB/Experimental/mod_fdir_grass.asc', x, y, uint8(fd_copy));
-
-
-
-

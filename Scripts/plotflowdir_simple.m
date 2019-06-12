@@ -1,4 +1,4 @@
-function h = plotflowdir(fdir, res, X, Y, ind, gage, basin, rivs, plotgrid)
+function h = plotflowdir_simple(fdir, res, X, Y, ind, plotgrid)
 
 % Tool for visualizing flow direction file to ensure that it is consistent
 % with stream network data. Plots the following:
@@ -8,11 +8,7 @@ function h = plotflowdir(fdir, res, X, Y, ind, gage, basin, rivs, plotgrid)
 %
 % INPUTS
 % fdir, flow direction raster (plain text format, VIC routing model numbering convention)
-% X, Y, meshgrid of coordinates over the domain extent
 % ind, the [row, col] indices where the gauges are in the flow direction file
-% gage, gage locations
-% basin, basin shapefile
-% rivs, river shapefile
 % plotgrid, flag for whether or not to plot the grid
 
 % OUTPUTS
@@ -68,26 +64,6 @@ for i=1:size(u,1)
     end
 end
   
-% If this block is plotting the basin upside-down, try reversing the order of
-% the Y vector.
-interval=res/2;
-h = figure;
-hold on
-if plotgrid % this can be computationally intensive to display
-    for i=1:size(X,1)
-        for j=1:size(X,2)
-            % draws grid
-            if fdir(i,j)>=0 % condition for being in the basin boundary
-                plot([X(i,j)-interval,X(i,j)+interval,...
-                    X(i,j)+interval,X(i,j)-interval,X(i,j)-interval],...
-                    [Y(i,j)-interval,Y(i,j)-interval,...
-                    Y(i,j)+interval,Y(i,j)+interval,Y(i,j)-interval],'k-')            
-                hold on
-            end
-        end
-    end
-end
-
 plot(basin.X,basin.Y,'k-', 'LineWidth', 2)
 
 % Plot rivers from database
@@ -98,11 +74,6 @@ end
 quiver(X,Y,u,v)
 hold on
 for i=1:size(ind,1) % Plot gage locations
-%     if ~isnan(ind(i,1))
-%         plot(X(1,ind(i,1)),Y(nrow-ind(i,2)+1),'r*')
-%     else
-%         warning('gage location not in basin')
-%     end
     hold on
     plot(gage(i,1),gage(i,2),'bo','linewidth',2)
     hold on
