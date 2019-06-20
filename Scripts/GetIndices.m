@@ -1,4 +1,4 @@
-function [row,col] = GetIndices(Z, R, points, res)
+function [row,col] = GetIndices(Z, R, points, res, projflag)
 
 % Finds indices in a raster where user-defined points are located.
 % Uses a lookup table approach, with the hypothetical table: [lat lon pixels]
@@ -10,6 +10,7 @@ function [row,col] = GetIndices(Z, R, points, res)
 % R, spatial referencing matrix (e.g. from arcgridread)
 % points, the coordinates of the user-defined points (e.g. gauge locs)
 % res, resolution of the flow direction file
+% projflag = 1 for projected coordinates, zero otherwise
 %
 % OUTPUTS
 % row, col
@@ -18,7 +19,14 @@ function [row,col] = GetIndices(Z, R, points, res)
 [A,B] = meshgrid(1:nrows, 1:ncols);
 A=cat(2,A',B');
 pixels=reshape(A,[],2);
-[lat, lon] = pix2latlon(R,pixels(:,1),pixels(:,2));
+
+if projflag
+    [x, y] = pix2map(R,pixels(:,1),pixels(:,2));
+    lon = x;
+    lat = y;
+else
+    [lat, lon] = pix2latlon(R,pixels(:,1),pixels(:,2));
+end
 
 npoints = size(points,1);
 row = NaN(npoints,1);

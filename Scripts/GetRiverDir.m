@@ -1,4 +1,4 @@
-function fd = GetRiverDir(fdir, R, rivs, res)
+function fd = GetRiverDir(fdir, R, rivs, res, projflag)
 
 % Gets the 'true' flow direction of cells with river passing through them. 
 % Calculation of angle theta assumes river vectors are listed in downstream direction. 
@@ -40,7 +40,7 @@ for j=1:numsegs
 end
 % If they are not, put them in order
 if in_order == 0
-    warning('rivers are not listed from longest to shortest. Sorting.');
+    disp('rivers are not listed from longest to shortest. Sorting.');
     [~,order]=sort(total_length,'descend');
     rivs_copy = rivs;
     for j=1:numsegs
@@ -62,11 +62,11 @@ numintervals = length(rivs(j).X)-1;
 
 for k=1:numintervals
 	points_in_cell = [rivs(j).X(k), rivs(j).Y(k)];
-	[row, col] = GetIndices(fdir, R, points_in_cell, res);
+	[row, col] = GetIndices(fdir, R, points_in_cell, res, projflag);
 	r=row; c=col; ind = 1;
 	while ((row==r && col==c) && (k+ind)<=length(rivs(j).Y))
 		next_point = [rivs(j).X(k+ind), rivs(j).Y(k+ind)];
-		[row, col] = GetIndices(fdir, R, next_point, res);
+		[row, col] = GetIndices(fdir, R, next_point, res, projflag);
 		if (row==r && col==c)
 			points_in_cell = [next_point; points_in_cell];
 		end
@@ -95,8 +95,8 @@ for k=1:numintervals
         end
         
 		for p = 1:(length(x)-1)
-			[row, col] = GetIndices(fdir, R, [x(p) y(p)], res);
-            [nextrow, nextcol] = GetIndices(fdir, R, [x(p+1) y(p+1)], res);
+			[row, col] = GetIndices(fdir, R, [x(p) y(p)], res, projflag);
+            [nextrow, nextcol] = GetIndices(fdir, R, [x(p+1) y(p+1)], res, projflag);
             if (row==nextrow && col==nextcol) && isnan(theta(row,col))
                 u = x(p+1) - x(p);
                 v = y(p+1) - y(p);

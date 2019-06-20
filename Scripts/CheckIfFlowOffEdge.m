@@ -8,6 +8,12 @@ function [edgerow, edgecol] = CheckIfFlowOffEdge(f);
 % OUTPUTS
 % Row and column indices of the flowing-off-edge grid cells
 
+% introduce NaN instead of zero if necessary
+if any(~isnan(f))
+    f = double(f);
+    f(f==0) = NaN;
+end
+
 [nrow,ncol] = size(f);
 edgerow = NaN;
 edgecol = NaN;

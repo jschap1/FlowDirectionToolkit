@@ -7,14 +7,17 @@ function fdirnew = convertflowdir(fdir, orig)
 % INPUTS
 % fdir
 % orig: original convention. Can be either 'vic', 'grass', or 'arcmap'
-% new: new convention
+% new: new convention. Can be either 'vic', 'grass', or 'arcmap'
 % 
 % OUTPUTS
 % fdirnew: flow direction file with the new flow direction convention
 
 switch orig
     case 'vic'
-        error('arcmap not yet implemented')
+        warning('Output convention and input convention are both: vic')
+        
+        fdirnew = fdir;
+        
     case 'grass'
         disp('Converting from GRASS flow direction convention to VIC routing model convention')
         
@@ -29,7 +32,19 @@ switch orig
         fdirnew(fdir==3) = 8;
                 
     case 'arcmap'
-        error('arcmap not yet implemented')
+        
+        disp('Converting from ArcMap flow direction convention to VIC routing model convention')
+        
+        fdirnew = fdir;
+        fdirnew(fdir==64) = 1;
+        fdirnew(fdir==128) = 2;
+        fdirnew(fdir==1) = 3;
+        fdirnew(fdir==2) = 4;
+        fdirnew(fdir==4) = 5;
+        fdirnew(fdir==8) = 6;
+        fdirnew(fdir==16) = 7;
+        fdirnew(fdir==32) = 8;
+        
     otherwise
         error('must specify vic, grass, or arcmap')
 end
